@@ -5,24 +5,167 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vocab Check</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif; padding: 24px; }
+    :root{
+      --bd:#e5e7eb;
+      --bd2:#f1f5f9;
+      --txt:#111827;
+      --muted:#6b7280;
+      --bg:#ffffff;
+      --ok:#16a34a;
+      --bad:#dc2626;
+      --ink:#111827;
+      --chip:#111827;
+      --chipText:#fff;
+      --soft:#f8fafc;
+    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif; padding: 24px; color:var(--txt); background:var(--bg);}
     h1 { margin: 0 0 16px; }
-    #app { max-width: 820px; }
+    #app { max-width: 860px; }
+
     .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    input, select, button { font-size: 16px; padding: 8px 10px; }
-    button { cursor: pointer; }
-    #status { margin-top: 10px; min-height: 24px; }
-    .section { margin-top: 18px; padding-top: 18px; border-top: 1px solid #ddd; }
+    input, select, button { font-size: 16px; padding: 10px 12px; }
+    input, select { border:1px solid var(--bd); border-radius:10px; }
+    button { cursor: pointer; border:1px solid var(--bd); border-radius:10px; background:#fff; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+
+    #status { margin-top: 10px; min-height: 24px; color:var(--muted); }
+    .section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--bd); }
     .section h2 { margin: 0 0 12px; font-size: 18px; }
-    .word-row { display: grid; grid-template-columns: 160px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px dashed #eee; }
-    .en { font-weight: 700; }
+
+    /* ===== 공통 리스트(세트) ===== */
+    .word-row { display: grid; grid-template-columns: 170px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--bd2); }
+    .en { font-weight: 800; letter-spacing:.2px; }
     .ko { user-select: none; }
-    .ko.masked { letter-spacing: 2px; }
+    .ko.masked { letter-spacing: 2px; color: var(--muted); }
     .btns { display: inline-flex; gap: 8px; }
-    .pill { font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 999px; }
-    .muted { color: #666; font-size: 13px; }
+    .pill { font-size: 12px; padding: 4px 8px; border: 1px solid var(--bd); border-radius: 999px; }
+    .muted { color: var(--muted); font-size: 13px; }
     .right { margin-left: auto; }
     .tiny { font-size: 13px; }
+
+    .btnChoice{
+      padding:10px 12px;
+      min-width:84px;
+      border-radius:12px;
+      font-weight:700;
+      transition:transform .06s ease, background .15s ease, border-color .15s ease;
+    }
+    .btnChoice:active{ transform:scale(.98); }
+    .btnChoice.know.selected{ background:rgba(22,163,74,.12); border-color:rgba(22,163,74,.35); color:var(--ok); }
+    .btnChoice.dont.selected{ background:rgba(220,38,38,.10); border-color:rgba(220,38,38,.35); color:var(--bad); }
+
+    .rowSelected{
+      background: linear-gradient(90deg, rgba(0,0,0,.02), rgba(0,0,0,0));
+      border-radius:12px;
+      padding-left:8px;
+      padding-right:8px;
+    }
+
+    /* ===== 오늘의 단어: 슬라이드 잠금 UI ===== */
+    .due-row{
+      position:relative;
+      display:grid;
+      grid-template-columns: 120px 1fr 120px;
+      gap:12px;
+      align-items:center;
+      padding:12px 0;
+      border-bottom:1px dashed var(--bd2);
+    }
+    .due-label{
+      font-weight:800;
+      text-align:center;
+      border:1px solid var(--bd);
+      border-radius:14px;
+      padding:10px 0;
+      background:var(--soft);
+      user-select:none;
+    }
+    .due-label.muted{
+      color: #9ca3af;
+      background:#fbfbfb;
+    }
+
+    .due-mid{
+      position:relative;
+      min-height:44px;
+      border:1px solid var(--bd);
+      border-radius:16px;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .due-meaning{
+      font-weight:700;
+      color:var(--ink);
+      opacity:0;
+      transform:translateY(2px);
+      transition:opacity .18s ease, transform .18s ease;
+      padding:0 10px;
+      text-align:center;
+      line-height:1.2;
+      user-select:none;
+    }
+    .due-meaning.show{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .due-chip{
+      position:absolute;
+      top:50%;
+      transform:translate(-50%,-50%);
+      left:50%;
+      padding:10px 14px;
+      border-radius:999px;
+      background:var(--chip);
+      color:var(--chipText);
+      font-weight:900;
+      letter-spacing:.2px;
+      box-shadow:0 10px 18px rgba(0,0,0,.12);
+      touch-action:none;
+      user-select:none;
+      cursor:grab;
+      transition: background .15s ease, box-shadow .15s ease;
+      white-space:nowrap;
+      max-width: calc(100% - 24px);
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .due-chip.grabbing{ cursor:grabbing; box-shadow:0 16px 24px rgba(0,0,0,.18); }
+    .due-chip.center{ background: #b91c1c; }   /* 빨강: 아직 선택 전 */
+    .due-chip.left{ background: #374151; }     /* 왼쪽(몰라요): 다크 */
+    .due-chip.right{ background: #166534; }    /* 오른쪽(알아요): 초록 */
+
+    .due-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      margin-top:12px;
+    }
+    .primary{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
+      font-weight:800;
+    }
+    .ghost{
+      background:#fff;
+      font-weight:800;
+    }
+
+    .toast{
+      margin-top:10px;
+      padding:12px 14px;
+      border:1px solid var(--bd);
+      border-radius:14px;
+      background: #f8fafc;
+      font-weight:800;
+      display:none;
+    }
+    .toast.show{ display:block; }
   </style>
 </head>
 
@@ -33,10 +176,10 @@
     <div class="row">
       <label>
         학생 ID
-        <input id="studentIdInput" placeholder="예: khh0728" />
+        <input id="studentIdInput" placeholder="예: khh0728" autocomplete="off" />
       </label>
 
-      <button id="loadBtn">불러오기</button>
+      <button id="loadBtn" class="primary">불러오기</button>
 
       <label class="row tiny" style="gap:8px; margin-left: 6px;">
         <input type="checkbox" id="dev10sToggle" />
@@ -46,15 +189,23 @@
     </div>
 
     <p id="status"></p>
+    <div id="toast" class="toast"></div>
 
     <!-- 오늘의 단어 -->
     <div id="todaySection" class="section" style="display:none;">
       <div class="row">
         <h2 style="margin:0;">오늘의 단어</h2>
         <span id="todayHint" class="muted"></span>
-        <button id="refreshDueBtn" class="right">새로고침</button>
+        <button id="refreshDueBtn" class="right ghost">새로고침</button>
       </div>
+
       <div id="todayList" style="margin-top:10px;"></div>
+
+      <div class="due-actions">
+        <button id="dueResetBtn" class="ghost">선택 초기화</button>
+        <button id="dueSubmitBtn" class="primary">완료</button>
+      </div>
+
       <p class="muted" style="margin-top:10px;">
         * ‘몰라요’로 제출한 단어가 (운영) 3일 후 / (개발 10초 모드) 10초 후에 여기로 올라옵니다.
       </p>
@@ -69,17 +220,24 @@
           <select id="setSelect"></select>
         </label>
       </div>
+
       <div id="wordList" style="margin-top:10px;"></div>
+
+      <div class="due-actions">
+        <button id="setResetBtn" class="ghost">선택 초기화</button>
+        <button id="setSubmitBtn" class="primary">완료</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // ✅ 너의 Worker URL
+    // ✅ Worker URL
     const API_BASE = "https://vocab-check-api.amatda-team.workers.dev";
 
     const input = document.getElementById("studentIdInput");
     const button = document.getElementById("loadBtn");
     const status = document.getElementById("status");
+    const toast = document.getElementById("toast");
 
     const controls = document.getElementById("controls");
     const setSelect = document.getElementById("setSelect");
@@ -89,23 +247,47 @@
     const todayList = document.getElementById("todayList");
     const todayHint = document.getElementById("todayHint");
     const refreshDueBtn = document.getElementById("refreshDueBtn");
+    const dueSubmitBtn = document.getElementById("dueSubmitBtn");
+    const dueResetBtn = document.getElementById("dueResetBtn");
+
+    const setSubmitBtn = document.getElementById("setSubmitBtn");
+    const setResetBtn = document.getElementById("setResetBtn");
 
     const dev10sToggle = document.getElementById("dev10sToggle");
 
+    // ===== LocalStorage keys =====
+    const LS_LAST_ID = "VOCAB_LAST_STUDENT_ID";
+    const LS_DEV10S = "DEV_10S";
+
     // 토글 상태 유지
-    dev10sToggle.checked = localStorage.getItem("DEV_10S") === "1";
+    dev10sToggle.checked = localStorage.getItem(LS_DEV10S) === "1";
     dev10sToggle.addEventListener("change", () => {
-      localStorage.setItem("DEV_10S", dev10sToggle.checked ? "1" : "0");
-      // due 재조회
+      localStorage.setItem(LS_DEV10S, dev10sToggle.checked ? "1" : "0");
       if (window.__currentStudentId) refreshDue();
     });
 
+    // 최근 입력 ID 자동 세팅 + 자동 로드(=enter까지)
+    const last = (localStorage.getItem(LS_LAST_ID) || "").trim();
+    if (last) input.value = last;
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(()=>toast.classList.remove("show"), 1800);
+    }
+
     function withDebug(url){
-      const isDev10s = localStorage.getItem("DEV_10S") === "1";
+      const isDev10s = localStorage.getItem(LS_DEV10S) === "1";
       return isDev10s ? `${url}${url.includes("?") ? "&" : "?"}debug=1` : url;
     }
 
     let currentIndex = null;
+
+    // ===== batch states =====
+    // 오늘의 단어: word -> { result: "know"|"dontknow"|null, meaning }
+    const dueState = new Map();
+    // 세트: key = en, value = { result, meaning }
+    const setState = new Map();
 
     async function loadStudentIndex(studentIdRaw) {
       const id = studentIdRaw.trim().toLowerCase();
@@ -154,98 +336,167 @@
       sets.forEach((set) => {
         const opt = document.createElement("option");
         opt.value = set.path;
-        // label 우선, 없으면 yyMMdd
         opt.textContent = set.label || set.date || set.yyMMdd || set.path;
         opt.dataset.yymd = set.yyMMdd || "";
         setSelect.appendChild(opt);
       });
     }
 
-    function makeWordRow({ en, ko }, { studentId, setId }, afterSubmit) {
+    // ====== 오늘의 단어: 슬라이드 컴포넌트 ======
+    function createDueRow(item, ctx){
       const row = document.createElement("div");
-      row.className = "word-row";
+      row.className = "due-row";
 
-      const enEl = document.createElement("div");
-      enEl.className = "en";
-      enEl.textContent = en;
+      const left = document.createElement("div");
+      left.className = "due-label";
+      left.textContent = "몰라요";
 
-      const koEl = document.createElement("div");
-      koEl.className = "ko masked";
-      koEl.textContent = "•••••";
+      const mid = document.createElement("div");
+      mid.className = "due-mid";
 
-      const btns = document.createElement("div");
-      btns.className = "btns";
+      const meaning = document.createElement("div");
+      meaning.className = "due-meaning";
+      meaning.textContent = item.meaning || "";
+      mid.appendChild(meaning);
 
-      const knowBtn = document.createElement("button");
-      knowBtn.textContent = "알아요";
+      const right = document.createElement("div");
+      right.className = "due-label";
+      right.textContent = "알아요";
 
-      const dontBtn = document.createElement("button");
-      dontBtn.textContent = "몰라요";
+      const chip = document.createElement("div");
+      chip.className = "due-chip center";
+      chip.textContent = item.word;
 
-      const setReveal = () => {
-        koEl.textContent = ko || "";
-        koEl.classList.remove("masked");
+      // 상태: null(센터) / dontknow(왼쪽) / know(오른쪽)
+      const getState = () => dueState.get(item.word)?.result ?? null;
+
+      function applyVisual(state){
+        // state: null | "dontknow" | "know"
+        if(state === "dontknow"){
+          chip.classList.remove("center","right");
+          chip.classList.add("left");
+          meaning.classList.add("show");
+          left.classList.remove("muted");
+          right.classList.add("muted");
+        }else if(state === "know"){
+          chip.classList.remove("center","left");
+          chip.classList.add("right");
+          meaning.classList.add("show");
+          right.classList.remove("muted");
+          left.classList.add("muted");
+        }else{
+          chip.classList.remove("left","right");
+          chip.classList.add("center");
+          meaning.classList.remove("show");
+          left.classList.remove("muted");
+          right.classList.remove("muted");
+        }
+        // snap 위치
+        const midRect = mid.getBoundingClientRect();
+        const leftRect = left.getBoundingClientRect();
+        const rightRect = right.getBoundingClientRect();
+        // position by centers
+        const centerX = midRect.left + midRect.width/2;
+        const leftX = leftRect.left + leftRect.width/2;
+        const rightX = rightRect.left + rightRect.width/2;
+
+        // chip is absolute within row; we will set using translate via CSS left
+        const rowRect = row.getBoundingClientRect();
+        const toLocal = (absX) => absX - rowRect.left;
+
+        if(state === "dontknow") chip.style.left = `${toLocal(leftX)}px`;
+        else if(state === "know") chip.style.left = `${toLocal(rightX)}px`;
+        else chip.style.left = `${toLocal(centerX)}px`;
+      }
+
+      // 초기 state 반영
+      if(!dueState.has(item.word)){
+        dueState.set(item.word, { result: null, meaning: item.meaning || "" });
+      }
+      // 최초 위치 계산은 DOM 붙은 뒤 정확하므로 requestAnimationFrame
+      requestAnimationFrame(()=>applyVisual(getState()));
+
+      // drag
+      let dragging = false;
+      let startX = 0;
+      let startLeftPx = 0;
+
+      const onDown = (e) => {
+        dragging = true;
+        chip.classList.add("grabbing");
+        chip.setPointerCapture(e.pointerId);
+        startX = e.clientX;
+        startLeftPx = parseFloat(getComputedStyle(chip).left) || 0;
       };
 
-      const lock = () => {
-        knowBtn.disabled = true;
-        dontBtn.disabled = true;
+      const onMove = (e) => {
+        if(!dragging) return;
+
+        const dx = e.clientX - startX;
+        const rowRect = row.getBoundingClientRect();
+
+        // bounds: between left label center and right label center
+        const leftRect = left.getBoundingClientRect();
+        const rightRect = right.getBoundingClientRect();
+        const minX = (leftRect.left + leftRect.width/2) - rowRect.left;
+        const maxX = (rightRect.left + rightRect.width/2) - rowRect.left;
+
+        let next = startLeftPx + dx;
+        if(next < minX) next = minX;
+        if(next > maxX) next = maxX;
+        chip.style.left = `${next}px`;
       };
 
-      knowBtn.addEventListener("click", async () => {
-        try {
-          lock();
-          setReveal();
-          await postEvent({ studentId, setId, word: en, meaning: ko, result: "know" });
-          if (afterSubmit) afterSubmit();
-        } catch (e) {
-          alert("제출 실패: " + e.message);
-          knowBtn.disabled = false;
-          dontBtn.disabled = false;
-        }
-      });
+      const onUp = (e) => {
+        if(!dragging) return;
+        dragging = false;
+        chip.classList.remove("grabbing");
 
-      dontBtn.addEventListener("click", async () => {
-        try {
-          lock();
-          setReveal();
-          await postEvent({ studentId, setId, word: en, meaning: ko, result: "dontknow" });
-          if (afterSubmit) afterSubmit();
-        } catch (e) {
-          alert("제출 실패: " + e.message);
-          knowBtn.disabled = false;
-          dontBtn.disabled = false;
-        }
-      });
+        // snap decision based on chip center vs mid center
+        const rowRect = row.getBoundingClientRect();
+        const chipLeft = parseFloat(getComputedStyle(chip).left) || 0;
+        const midRect = mid.getBoundingClientRect();
+        const midCenter = (midRect.left + midRect.width/2) - rowRect.left;
 
-      btns.appendChild(knowBtn);
-      btns.appendChild(dontBtn);
+        const leftRect = left.getBoundingClientRect();
+        const rightRect = right.getBoundingClientRect();
+        const leftCenter = (leftRect.left + leftRect.width/2) - rowRect.left;
+        const rightCenter = (rightRect.left + rightRect.width/2) - rowRect.left;
 
-      row.appendChild(enEl);
-      row.appendChild(koEl);
-      row.appendChild(btns);
+        // threshold: closer to left/right than center
+        const dC = Math.abs(chipLeft - midCenter);
+        const dL = Math.abs(chipLeft - leftCenter);
+        const dR = Math.abs(chipLeft - rightCenter);
+
+        let state = null;
+        if(dL < dC && dL < dR) state = "dontknow";
+        else if(dR < dC && dR < dL) state = "know";
+        else state = null;
+
+        dueState.set(item.word, { result: state, meaning: item.meaning || "" });
+        applyVisual(state);
+      };
+
+      chip.addEventListener("pointerdown", onDown);
+      chip.addEventListener("pointermove", onMove);
+      chip.addEventListener("pointerup", onUp);
+      chip.addEventListener("pointercancel", onUp);
+
+      row.appendChild(left);
+      row.appendChild(mid);
+      row.appendChild(right);
+      row.appendChild(chip);
+
+      // resize/scroll 시 스냅 재계산
+      const ro = new ResizeObserver(()=>applyVisual(getState()));
+      ro.observe(row);
 
       return row;
     }
 
-    function renderWords(words, ctx) {
-      wordList.innerHTML = "";
-
-      words.forEach((w) => {
-        const row = makeWordRow(
-          { en: w.en, ko: w.ko },
-          ctx,
-          () => {
-            // 세트에서 눌러도 오늘의 단어에 영향 있을 수 있으니 갱신
-            refreshDue();
-          }
-        );
-        wordList.appendChild(row);
-      });
-    }
-
     function renderDueItems(items, ctx) {
       todayList.innerHTML = "";
+      dueState.clear();
 
       if (!items.length) {
         todayList.innerHTML = `<p class="muted">오늘 복습할 단어가 아직 없어요.</p>`;
@@ -253,71 +504,7 @@
       }
 
       items.forEach((it) => {
-        // due는 meaning을 서버에 저장해둔 값 사용
-        const row = document.createElement("div");
-        row.className = "word-row";
-
-        const enEl = document.createElement("div");
-        enEl.className = "en";
-        enEl.textContent = it.word;
-
-        const koEl = document.createElement("div");
-        koEl.className = "ko masked";
-        koEl.textContent = "•••••";
-
-        const btns = document.createElement("div");
-        btns.className = "btns";
-
-        const knowBtn = document.createElement("button");
-        knowBtn.textContent = "알아요";
-
-        const dontBtn = document.createElement("button");
-        dontBtn.textContent = "몰라요";
-
-        const reveal = () => {
-          koEl.textContent = it.meaning || "";
-          koEl.classList.remove("masked");
-        };
-
-        const lock = () => {
-          knowBtn.disabled = true;
-          dontBtn.disabled = true;
-        };
-
-        knowBtn.addEventListener("click", async () => {
-          try {
-            lock();
-            reveal();
-            await postEvent({ studentId: ctx.studentId, setId: ctx.setId, word: it.word, meaning: it.meaning, result: "know" });
-            refreshDue();
-          } catch (e) {
-            alert("제출 실패: " + e.message);
-            knowBtn.disabled = false;
-            dontBtn.disabled = false;
-          }
-        });
-
-        dontBtn.addEventListener("click", async () => {
-          try {
-            lock();
-            reveal();
-            await postEvent({ studentId: ctx.studentId, setId: ctx.setId, word: it.word, meaning: it.meaning, result: "dontknow" });
-            refreshDue();
-          } catch (e) {
-            alert("제출 실패: " + e.message);
-            knowBtn.disabled = false;
-            dontBtn.disabled = false;
-          }
-        });
-
-        btns.appendChild(knowBtn);
-        btns.appendChild(dontBtn);
-
-        row.appendChild(enEl);
-        row.appendChild(koEl);
-        row.appendChild(btns);
-
-        todayList.appendChild(row);
+        todayList.appendChild(createDueRow(it, ctx));
       });
     }
 
@@ -342,7 +529,178 @@
 
     refreshDueBtn.addEventListener("click", () => refreshDue());
 
-    async function loadFlow() {
+    dueResetBtn.addEventListener("click", () => {
+      // 모든 due를 center로
+      for(const [w, v] of dueState.entries()){
+        dueState.set(w, { ...v, result: null });
+      }
+      // 다시 렌더
+      refreshDue();
+    });
+
+    dueSubmitBtn.addEventListener("click", async () => {
+      const studentId = window.__currentStudentId;
+      if(!studentId) return;
+
+      // 선택된 것만 제출
+      const entries = Array.from(dueState.entries())
+        .filter(([w, v]) => v.result === "know" || v.result === "dontknow");
+
+      if(entries.length === 0){
+        showToast("아직 선택한 단어가 없어요.");
+        return;
+      }
+
+      dueSubmitBtn.disabled = true;
+
+      try{
+        // 한 번에 제출
+        for(const [word, v] of entries){
+          await postEvent({
+            studentId,
+            setId: window.__currentSetId || "",
+            word,
+            meaning: v.meaning || "",
+            result: v.result
+          });
+        }
+        showToast("오늘의 단어 학습 끝!");
+        // ✅ 갱신은 딱 한 번
+        await refreshDue();
+      }catch(e){
+        alert("제출 실패: " + e.message);
+      }finally{
+        dueSubmitBtn.disabled = false;
+      }
+    });
+
+    // ====== 세트 리스트 (버튼 + 배치 제출) ======
+    function makeSetWordRow(w, ctx){
+      const row = document.createElement("div");
+      row.className = "word-row";
+
+      const enEl = document.createElement("div");
+      enEl.className = "en";
+      enEl.textContent = w.en;
+
+      const koEl = document.createElement("div");
+      koEl.className = "ko masked";
+      koEl.textContent = "•••••";
+
+      const btns = document.createElement("div");
+      btns.className = "btns";
+
+      const knowBtn = document.createElement("button");
+      knowBtn.className = "btnChoice know";
+      knowBtn.textContent = "알아요";
+
+      const dontBtn = document.createElement("button");
+      dontBtn.className = "btnChoice dont";
+      dontBtn.textContent = "몰라요";
+
+      const reveal = () => {
+        koEl.textContent = w.ko || "";
+        koEl.classList.remove("masked");
+      };
+
+      const applySelected = (result) => {
+        // result: "know"|"dontknow"|null
+        if(result){
+          row.classList.add("rowSelected");
+          reveal();
+        }else{
+          row.classList.remove("rowSelected");
+          koEl.textContent = "•••••";
+          koEl.classList.add("masked");
+        }
+        knowBtn.classList.toggle("selected", result === "know");
+        dontBtn.classList.toggle("selected", result === "dontknow");
+      };
+
+      // 초기 상태
+      const key = w.en;
+      if(!setState.has(key)){
+        setState.set(key, { result: null, meaning: w.ko || "" });
+      }
+      applySelected(setState.get(key).result);
+
+      knowBtn.addEventListener("click", () => {
+        setState.set(key, { result: "know", meaning: w.ko || "" });
+        applySelected("know");
+      });
+
+      dontBtn.addEventListener("click", () => {
+        setState.set(key, { result: "dontknow", meaning: w.ko || "" });
+        applySelected("dontknow");
+      });
+
+      btns.appendChild(knowBtn);
+      btns.appendChild(dontBtn);
+
+      row.appendChild(enEl);
+      row.appendChild(koEl);
+      row.appendChild(btns);
+
+      return row;
+    }
+
+    function renderWords(words, ctx) {
+      wordList.innerHTML = "";
+      setState.clear();
+
+      words.forEach((w) => {
+        wordList.appendChild(makeSetWordRow(w, ctx));
+      });
+    }
+
+    setResetBtn.addEventListener("click", async () => {
+      // 선택 초기화: 재렌더(현재 세트 다시 로드)
+      try{
+        const path = setSelect.value;
+        const words = await loadSet(path);
+        renderWords(words, { studentId: window.__currentStudentId, setId: window.__currentSetId });
+        showToast("세트 선택을 초기화했어요.");
+      }catch(e){
+        showToast("초기화 실패");
+      }
+    });
+
+    setSubmitBtn.addEventListener("click", async () => {
+      const studentId = window.__currentStudentId;
+      if(!studentId) return;
+
+      const entries = Array.from(setState.entries())
+        .filter(([en, v]) => v.result === "know" || v.result === "dontknow");
+
+      if(entries.length === 0){
+        showToast("아직 선택한 단어가 없어요.");
+        return;
+      }
+
+      setSubmitBtn.disabled = true;
+
+      try{
+        for(const [word, v] of entries){
+          await postEvent({
+            studentId,
+            setId: window.__currentSetId || "",
+            word,
+            meaning: v.meaning || "",
+            result: v.result
+          });
+        }
+        showToast("세트 학습 완료!");
+        // ✅ due 갱신도 딱 한 번
+        await refreshDue();
+      }catch(e){
+        alert("제출 실패: " + e.message);
+      }finally{
+        setSubmitBtn.disabled = false;
+      }
+    });
+
+    // ====== 로드 플로우 ======
+    async function loadFlow(auto=false) {
       const raw = input.value;
       if (!raw.trim()) {
         status.textContent = "ID를 입력하세요.";
@@ -350,6 +708,9 @@
       }
 
       try {
+        // ✅ 마지막 ID 저장
+        localStorage.setItem(LS_LAST_ID, raw.trim());
+
         const { id, data } = await loadStudentIndex(raw);
         window.__currentStudentId = id;
         currentIndex = data;
@@ -369,35 +730,40 @@
         // due(오늘의 단어) 로드
         await refreshDue();
 
+        if(auto) showToast("최근 학생 ID로 자동 로드했어요.");
       } catch (err) {
         console.error(err);
         status.textContent = `❌ 실패: ${err.message}`;
       }
     }
 
-    button.addEventListener("click", loadFlow);
+    button.addEventListener("click", () => loadFlow(false));
 
     // ✅ Enter로 로드
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") loadFlow();
+      if (e.key === "Enter") loadFlow(false);
     });
 
     setSelect.addEventListener("change", async () => {
       try {
         const path = setSelect.value;
-
-        // 현재 선택된 option의 yyMMdd를 setId로 보관
         const opt = setSelect.options[setSelect.selectedIndex];
         window.__currentSetId = opt?.dataset?.yymd || "";
 
         const words = await loadSet(path);
         renderWords(words, { studentId: window.__currentStudentId, setId: window.__currentSetId });
-
+        showToast("세트를 바꿨어요.");
       } catch (err) {
         console.error(err);
-        status.textContent = `❌ 세트 변경 실패`;
+        status.textContent = `❌ 세트 변경 실패: ${err.message || ""}`;
       }
     });
+
+    // ✅ 페이지 열자마자 최근 ID가 있으면 자동 로드(=enter까지 된 상태)
+    if(last){
+      // 아주 짧게 delay → 렌더 안정
+      setTimeout(()=>loadFlow(true), 30);
+    }
   </script>
 </body>
 </html>
