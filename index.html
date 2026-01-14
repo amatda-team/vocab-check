@@ -9,12 +9,27 @@
     <button id="loadBtn">불러오기</button>
 
     <p id="status"></p>
+    <div id="controls" style="display:none; margin-top:20px;">
+  <label>
+    세트 선택
+    <select id="setSelect"></select>
+  </label>
+</div>
+
+<div id="wordList" style="margin-top:20px;"></div>
+
   </div>
 
 <script>
   const input = document.getElementById("studentIdInput");
   const button = document.getElementById("loadBtn");
   const status = document.getElementById("status");
+
+  const controls = document.getElementById("controls");
+  const setSelect = document.getElementById("setSelect");
+  const wordList = document.getElementById("wordList");
+
+  let currentIndex = null;
 
   async function loadStudentIndex(studentIdRaw) {
     const id = studentIdRaw.trim().toLowerCase();
@@ -27,12 +42,57 @@
     if (!res.ok) throw new Error(`index.json 로드 실패: ${res.status}`);
 
     const data = await res.json();
-
-    if (!data || !Array.isArray(data.sets)) {
-      throw new Error("index.json 형식 오류: sets 배열이 없습니다.");
+    if (!Array.isArray(data.sets)) {
+      throw new Error("index.json 형식 오류");
     }
 
-    return { id, indexPath, data };
+    return data;
+  }
+
+  async function loadSet(path) {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) throw new Error(`세트 로드 실패: ${res.status}`);
+    return res.json();
+  }
+
+  function renderSetOptions(sets) {
+    setSelect.innerHTML = "";
+    sets.forEach((set, i) => {
+      const opt = document.createElement("option");
+      opt.value = set.path;
+      opt.textContent = set.label || set.yyMMdd;
+      setSelect.appendChild(opt);
+    });
+  }
+
+  function renderWords(words) {
+    wordList.innerHTML = "";
+
+    words.forEach(({ en, ko }) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.gap = "16px";
+      row.style.marginBottom = "8px";
+
+      const enEl = document.createElement("div");
+      enEl.textContent = en;
+      enEl.style.width = "150px";
+      enEl.style.fontWeight = "bold";
+
+      const koEl = document.createElement("div");
+      koEl.textContent = "•••••";
+      koEl.style.cursor = "pointer";
+
+      let revealed = false;
+      koEl.addEventListener("click", () => {
+        revealed = !revealed;
+        koEl.textContent = revealed ? ko : "•••••";
+      });
+
+      row.appendChild(enEl);
+      row.appendChild(koEl);
+      wordList.appendChild(row);
+    });
   }
 
   button.addEventListener("click", async () => {
@@ -43,16 +103,35 @@
     }
 
     try {
-      const { id, indexPath, data } = await loadStudentIndex(raw);
+      currentIndex = await loadStudentIndex(raw);
 
-      status.textContent = `✅ ${id} 세트 ${data.sets.length}개 로드됨`;
-      console.log("indexPath:", indexPath);
-      console.log("학생 index.json:", data);
+      status.textContent = `✅ 세트 ${currentIndex.sets.length}개 로드됨`;
+      controls.style.display = "block";
+
+      renderSetOptions(currentIndex.sets);
+
+      // 첫 세트 자동 로드
+      const firstPath = currentIndex.sets[0].path;
+      const words = await loadSet(firstPath);
+      renderWords(words);
+
     } catch (err) {
       console.error(err);
-      status.textContent = `❌ 불러오기 실패: ${err.message}`;
+      status.textContent = `❌ 실패: ${err.message}`;
+    }
+  });
+
+  setSelect.addEventListener("change", async () => {
+    try {
+      const path = setSelect.value;
+      const words = await loadSet(path);
+      renderWords(words);
+    } catch (err) {
+      console.error(err);
+      status.textContent = `❌ 세트 변경 실패`;
     }
   });
 </script>
+
 
 </body>
