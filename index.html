@@ -14,46 +14,84 @@
       --ok:#16a34a;
       --bad:#dc2626;
       --ink:#111827;
-      --chip:#111827;
-      --chipText:#fff;
       --soft:#f8fafc;
     }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif; padding: 24px; color:var(--txt); background:var(--bg);}
-    h1 { margin: 0 0 16px; }
+
+    *{ box-sizing:border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif;
+      padding: 24px;
+      color:var(--txt);
+      background:var(--bg);
+      margin:0;
+    }
+    h1 { margin: 0 0 16px; font-size:44px; letter-spacing:-0.6px; }
     #app { max-width: 860px; }
 
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    input, select, button { font-size: 16px; padding: 10px 12px; }
-    input, select { border:1px solid var(--bd); border-radius:10px; }
-    button { cursor: pointer; border:1px solid var(--bd); border-radius:10px; background:#fff; }
-    button:disabled{ opacity:.5; cursor:not-allowed; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    label{ display:flex; gap:8px; align-items:center; }
+    input, select, button { font-size:16px; padding:10px 12px; }
+    input, select { border:1px solid var(--bd); border-radius:12px; background:#fff; }
+    input{ width:240px; }
+    button { cursor:pointer; border:1px solid var(--bd); border-radius:12px; background:#fff; font-weight:800; }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
 
-    #status { margin-top: 10px; min-height: 24px; color:var(--muted); }
-    .section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--bd); }
-    .section h2 { margin: 0 0 12px; font-size: 18px; }
+    #status { margin-top: 10px; min-height: 24px; color:var(--muted); font-weight:700; }
+    .section { margin-top:18px; padding-top:18px; border-top:1px solid var(--bd); }
+    .section h2 { margin:0 0 12px; font-size:20px; letter-spacing:-0.2px; }
+    .pill { font-size:12px; padding:4px 8px; border:1px solid var(--bd); border-radius:999px; }
+    .muted { color:var(--muted); font-size:13px; }
+    .right { margin-left:auto; }
+    .tiny { font-size:13px; }
+
+    .toast{
+      margin-top:10px;
+      padding:12px 14px;
+      border:1px solid var(--bd);
+      border-radius:14px;
+      background: var(--soft);
+      font-weight:900;
+      display:none;
+    }
+    .toast.show{ display:block; }
+
+    /* ===== Buttons ===== */
+    .primary{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
+    }
+    .ghost{
+      background:#fff;
+      color:#111827;
+    }
 
     /* ===== 공통 리스트(세트) ===== */
-    .word-row { display: grid; grid-template-columns: 170px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--bd2); }
-    .en { font-weight: 800; letter-spacing:.2px; }
-    .ko { user-select: none; }
-    .ko.masked { letter-spacing: 2px; color: var(--muted); }
-    .btns { display: inline-flex; gap: 8px; }
-    .pill { font-size: 12px; padding: 4px 8px; border: 1px solid var(--bd); border-radius: 999px; }
-    .muted { color: var(--muted); font-size: 13px; }
-    .right { margin-left: auto; }
-    .tiny { font-size: 13px; }
-
+    .word-row{
+      display:grid;
+      grid-template-columns: 170px 1fr auto;
+      gap:12px;
+      align-items:center;
+      padding:12px 0;
+      border-bottom:1px dashed var(--bd2);
+    }
+    .en{ font-weight:900; letter-spacing:.2px; }
+    .ko{ user-select:none; line-height:1.25; }
+    .ko.masked{ letter-spacing:2px; color: var(--muted); }
+    .btns{ display:inline-flex; gap:8px; }
     .btnChoice{
       padding:10px 12px;
-      min-width:84px;
+      min-width:88px;
       border-radius:12px;
-      font-weight:700;
+      font-weight:900;
       transition:transform .06s ease, background .15s ease, border-color .15s ease;
+      border:1px solid var(--bd);
+      background:#fff;
     }
     .btnChoice:active{ transform:scale(.98); }
     .btnChoice.know.selected{ background:rgba(22,163,74,.12); border-color:rgba(22,163,74,.35); color:var(--ok); }
     .btnChoice.dont.selected{ background:rgba(220,38,38,.10); border-color:rgba(220,38,38,.35); color:var(--bad); }
-
     .rowSelected{
       background: linear-gradient(90deg, rgba(0,0,0,.02), rgba(0,0,0,0));
       border-radius:12px;
@@ -71,41 +109,53 @@
       padding:12px 0;
       border-bottom:1px dashed var(--bd2);
     }
+
+    /* ✅ 라벨 기본 muted, 선택된 쪽만 강조 */
     .due-label{
-      font-weight:800;
+      font-weight:900;
       text-align:center;
       border:1px solid var(--bd);
       border-radius:14px;
       padding:10px 0;
       background:var(--soft);
       user-select:none;
+      color:#9ca3af; /* 기본 강조 낮춤 */
     }
-    .due-label.muted{
-      color: #9ca3af;
-      background:#fbfbfb;
+    .due-label.active-left{
+      color:#dc2626;
+      border-color: rgba(220,38,38,.35);
+      background: rgba(220,38,38,.06);
+    }
+    .due-label.active-right{
+      color:#16a34a;
+      border-color: rgba(22,163,74,.35);
+      background: rgba(22,163,74,.07);
     }
 
+    /* ✅ 가운데 영역 넓고 안정적으로 */
     .due-mid{
       position:relative;
-      min-height:44px;
+      min-height:52px;
       border:1px solid var(--bd);
-      border-radius:16px;
+      border-radius:18px;
       background:#fff;
       display:flex;
       align-items:center;
       justify-content:center;
       overflow:hidden;
+      padding:0 10px;
     }
     .due-meaning{
-      font-weight:700;
+      font-weight:900;
       color:var(--ink);
       opacity:0;
       transform:translateY(2px);
       transition:opacity .18s ease, transform .18s ease;
-      padding:0 10px;
       text-align:center;
       line-height:1.2;
       user-select:none;
+      word-break: keep-all;
+      overflow-wrap: anywhere; /* 긴 뜻 대응 */
     }
     .due-meaning.show{
       opacity:1;
@@ -117,11 +167,10 @@
       top:50%;
       transform:translate(-50%,-50%);
       left:50%;
-      padding:10px 14px;
+      padding:12px 14px;
       border-radius:999px;
-      background:var(--chip);
-      color:var(--chipText);
-      font-weight:900;
+      color:#fff;
+      font-weight:950;
       letter-spacing:.2px;
       box-shadow:0 10px 18px rgba(0,0,0,.12);
       touch-action:none;
@@ -134,9 +183,11 @@
       text-overflow:ellipsis;
     }
     .due-chip.grabbing{ cursor:grabbing; box-shadow:0 16px 24px rgba(0,0,0,.18); }
-    .due-chip.center{ background: #b91c1c; }   /* 빨강: 아직 선택 전 */
-    .due-chip.left{ background: #374151; }     /* 왼쪽(몰라요): 다크 */
-    .due-chip.right{ background: #166534; }    /* 오른쪽(알아요): 초록 */
+
+    /* ✅ 미선택(센터): 중립 / 왼쪽: 빨강 / 오른쪽: 초록 */
+    .due-chip.center{ background:#111827; }
+    .due-chip.left{ background:#dc2626; }
+    .due-chip.right{ background:#16a34a; }
 
     .due-actions{
       display:flex;
@@ -144,28 +195,42 @@
       align-items:center;
       justify-content:flex-end;
       margin-top:12px;
-    }
-    .primary{
-      background:#111827;
-      color:#fff;
-      border-color:#111827;
-      font-weight:800;
-    }
-    .ghost{
-      background:#fff;
-      font-weight:800;
+      flex-wrap:wrap;
     }
 
-    .toast{
-      margin-top:10px;
-      padding:12px 14px;
-      border:1px solid var(--bd);
-      border-radius:14px;
-      background: #f8fafc;
-      font-weight:800;
-      display:none;
+    /* ===== 모바일 반응형 ===== */
+    @media (max-width: 520px){
+      body{ padding:16px; }
+      h1{ font-size:40px; }
+      #app{ max-width:100%; }
+
+      input{ width: 100%; max-width: 320px; }
+      .row{ gap:10px; }
+      .right{ margin-left:0; }
+
+      /* 오늘의 단어: 좌/우 줄이고 가운데 넓힘 */
+      .due-row{
+        grid-template-columns: 88px 1fr 88px;
+        gap:10px;
+      }
+      .due-label{ padding:12px 0; border-radius:16px; }
+      .due-mid{ min-height:58px; border-radius:20px; }
+      .due-chip{ padding:14px 14px; }
+
+      /* 세트 리스트: 2줄 배치로 뜻 안깨지게 */
+      .word-row{
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "en btns"
+          "ko btns";
+        gap:10px;
+        padding:14px 0;
+      }
+      .word-row .en{ grid-area: en; }
+      .word-row .ko{ grid-area: ko; }
+      .word-row .btns{ grid-area: btns; align-self:start; }
+      .btnChoice{ min-width:74px; padding:10px 10px; }
     }
-    .toast.show{ display:block; }
   </style>
 </head>
 
@@ -259,17 +324,6 @@
     const LS_LAST_ID = "VOCAB_LAST_STUDENT_ID";
     const LS_DEV10S = "DEV_10S";
 
-    // 토글 상태 유지
-    dev10sToggle.checked = localStorage.getItem(LS_DEV10S) === "1";
-    dev10sToggle.addEventListener("change", () => {
-      localStorage.setItem(LS_DEV10S, dev10sToggle.checked ? "1" : "0");
-      if (window.__currentStudentId) refreshDue();
-    });
-
-    // 최근 입력 ID 자동 세팅 + 자동 로드(=enter까지)
-    const last = (localStorage.getItem(LS_LAST_ID) || "").trim();
-    if (last) input.value = last;
-
     function showToast(msg){
       toast.textContent = msg;
       toast.classList.add("show");
@@ -280,6 +334,17 @@
       const isDev10s = localStorage.getItem(LS_DEV10S) === "1";
       return isDev10s ? `${url}${url.includes("?") ? "&" : "?"}debug=1` : url;
     }
+
+    // 토글 상태 유지
+    dev10sToggle.checked = localStorage.getItem(LS_DEV10S) === "1";
+    dev10sToggle.addEventListener("change", () => {
+      localStorage.setItem(LS_DEV10S, dev10sToggle.checked ? "1" : "0");
+      if (window.__currentStudentId) refreshDue();
+    });
+
+    // 최근 입력 ID 자동 세팅 + 자동 로드
+    const last = (localStorage.getItem(LS_LAST_ID) || "").trim();
+    if (last) input.value = last;
 
     let currentIndex = null;
 
@@ -371,36 +436,35 @@
       const getState = () => dueState.get(item.word)?.result ?? null;
 
       function applyVisual(state){
-        // state: null | "dontknow" | "know"
+        // 라벨 강조 초기화
+        left.classList.remove("active-left");
+        right.classList.remove("active-right");
+
         if(state === "dontknow"){
           chip.classList.remove("center","right");
           chip.classList.add("left");
           meaning.classList.add("show");
-          left.classList.remove("muted");
-          right.classList.add("muted");
+          left.classList.add("active-left");
         }else if(state === "know"){
           chip.classList.remove("center","left");
           chip.classList.add("right");
           meaning.classList.add("show");
-          right.classList.remove("muted");
-          left.classList.add("muted");
+          right.classList.add("active-right");
         }else{
           chip.classList.remove("left","right");
           chip.classList.add("center");
           meaning.classList.remove("show");
-          left.classList.remove("muted");
-          right.classList.remove("muted");
         }
-        // snap 위치
+
+        // snap 위치 계산
         const midRect = mid.getBoundingClientRect();
         const leftRect = left.getBoundingClientRect();
         const rightRect = right.getBoundingClientRect();
-        // position by centers
+
         const centerX = midRect.left + midRect.width/2;
         const leftX = leftRect.left + leftRect.width/2;
         const rightX = rightRect.left + rightRect.width/2;
 
-        // chip is absolute within row; we will set using translate via CSS left
         const rowRect = row.getBoundingClientRect();
         const toLocal = (absX) => absX - rowRect.left;
 
@@ -413,7 +477,6 @@
       if(!dueState.has(item.word)){
         dueState.set(item.word, { result: null, meaning: item.meaning || "" });
       }
-      // 최초 위치 계산은 DOM 붙은 뒤 정확하므로 requestAnimationFrame
       requestAnimationFrame(()=>applyVisual(getState()));
 
       // drag
@@ -435,7 +498,6 @@
         const dx = e.clientX - startX;
         const rowRect = row.getBoundingClientRect();
 
-        // bounds: between left label center and right label center
         const leftRect = left.getBoundingClientRect();
         const rightRect = right.getBoundingClientRect();
         const minX = (leftRect.left + leftRect.width/2) - rowRect.left;
@@ -447,12 +509,11 @@
         chip.style.left = `${next}px`;
       };
 
-      const onUp = (e) => {
+      const onUp = () => {
         if(!dragging) return;
         dragging = false;
         chip.classList.remove("grabbing");
 
-        // snap decision based on chip center vs mid center
         const rowRect = row.getBoundingClientRect();
         const chipLeft = parseFloat(getComputedStyle(chip).left) || 0;
         const midRect = mid.getBoundingClientRect();
@@ -463,7 +524,6 @@
         const leftCenter = (leftRect.left + leftRect.width/2) - rowRect.left;
         const rightCenter = (rightRect.left + rightRect.width/2) - rowRect.left;
 
-        // threshold: closer to left/right than center
         const dC = Math.abs(chipLeft - midCenter);
         const dL = Math.abs(chipLeft - leftCenter);
         const dR = Math.abs(chipLeft - rightCenter);
@@ -487,7 +547,7 @@
       row.appendChild(right);
       row.appendChild(chip);
 
-      // resize/scroll 시 스냅 재계산
+      // resize 시 스냅 재계산
       const ro = new ResizeObserver(()=>applyVisual(getState()));
       ro.observe(row);
 
@@ -516,10 +576,7 @@
         const items = await fetchDue(studentId, 30);
         todaySection.style.display = "block";
         todayHint.textContent = `(${items.length}개)`;
-        renderDueItems(items, {
-          studentId,
-          setId: window.__currentSetId || "",
-        });
+        renderDueItems(items, { studentId, setId: window.__currentSetId || "" });
       } catch (e) {
         todaySection.style.display = "block";
         todayHint.textContent = "";
@@ -530,31 +587,38 @@
     refreshDueBtn.addEventListener("click", () => refreshDue());
 
     dueResetBtn.addEventListener("click", () => {
-      // 모든 due를 center로
-      for(const [w, v] of dueState.entries()){
-        dueState.set(w, { ...v, result: null });
-      }
-      // 다시 렌더
+      // 선택 초기화는 "다시 렌더"가 제일 확실
       refreshDue();
+      showToast("선택을 초기화했어요.");
     });
 
+    // ✅ 오늘의 단어: 미선택 있으면 완료 불가 + alert
     dueSubmitBtn.addEventListener("click", async () => {
       const studentId = window.__currentStudentId;
       if(!studentId) return;
 
-      // 선택된 것만 제출
+      if (dueState.size === 0) {
+        alert("오늘의 단어가 없어요.");
+        return;
+      }
+
+      const hasUnselected = Array.from(dueState.values()).some(v => v.result == null);
+      if (hasUnselected) {
+        alert("아직 선택하지 않은 단어가 있어요.\n각 단어를 몰라요/알아요 쪽으로 슬라이드해서 선택해 주세요.");
+        return;
+      }
+
       const entries = Array.from(dueState.entries())
         .filter(([w, v]) => v.result === "know" || v.result === "dontknow");
 
       if(entries.length === 0){
-        showToast("아직 선택한 단어가 없어요.");
+        alert("선택된 단어가 없어요.");
         return;
       }
 
       dueSubmitBtn.disabled = true;
 
       try{
-        // 한 번에 제출
         for(const [word, v] of entries){
           await postEvent({
             studentId,
@@ -565,8 +629,7 @@
           });
         }
         showToast("오늘의 단어 학습 끝!");
-        // ✅ 갱신은 딱 한 번
-        await refreshDue();
+        await refreshDue(); // ✅ 갱신 1회
       }catch(e){
         alert("제출 실패: " + e.message);
       }finally{
@@ -604,7 +667,6 @@
       };
 
       const applySelected = (result) => {
-        // result: "know"|"dontknow"|null
         if(result){
           row.classList.add("rowSelected");
           reveal();
@@ -617,7 +679,6 @@
         dontBtn.classList.toggle("selected", result === "dontknow");
       };
 
-      // 초기 상태
       const key = w.en;
       if(!setState.has(key)){
         setState.set(key, { result: null, meaning: w.ko || "" });
@@ -647,14 +708,10 @@
     function renderWords(words, ctx) {
       wordList.innerHTML = "";
       setState.clear();
-
-      words.forEach((w) => {
-        wordList.appendChild(makeSetWordRow(w, ctx));
-      });
+      words.forEach((w) => wordList.appendChild(makeSetWordRow(w, ctx)));
     }
 
     setResetBtn.addEventListener("click", async () => {
-      // 선택 초기화: 재렌더(현재 세트 다시 로드)
       try{
         const path = setSelect.value;
         const words = await loadSet(path);
@@ -673,7 +730,7 @@
         .filter(([en, v]) => v.result === "know" || v.result === "dontknow");
 
       if(entries.length === 0){
-        showToast("아직 선택한 단어가 없어요.");
+        alert("아직 선택한 단어가 없어요.");
         return;
       }
 
@@ -690,8 +747,7 @@
           });
         }
         showToast("세트 학습 완료!");
-        // ✅ due 갱신도 딱 한 번
-        await refreshDue();
+        await refreshDue(); // ✅ due 갱신 1회
       }catch(e){
         alert("제출 실패: " + e.message);
       }finally{
@@ -708,7 +764,6 @@
       }
 
       try {
-        // ✅ 마지막 ID 저장
         localStorage.setItem(LS_LAST_ID, raw.trim());
 
         const { id, data } = await loadStudentIndex(raw);
@@ -720,14 +775,11 @@
 
         renderSetOptions(currentIndex.sets);
 
-        // 첫 세트 자동 로드
         const first = currentIndex.sets[0];
-        const firstPath = first.path;
         window.__currentSetId = first.yyMMdd || "";
-        const words = await loadSet(firstPath);
+        const words = await loadSet(first.path);
         renderWords(words, { studentId: id, setId: window.__currentSetId });
 
-        // due(오늘의 단어) 로드
         await refreshDue();
 
         if(auto) showToast("최근 학생 ID로 자동 로드했어요.");
@@ -738,8 +790,6 @@
     }
 
     button.addEventListener("click", () => loadFlow(false));
-
-    // ✅ Enter로 로드
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") loadFlow(false);
     });
@@ -759,9 +809,8 @@
       }
     });
 
-    // ✅ 페이지 열자마자 최근 ID가 있으면 자동 로드(=enter까지 된 상태)
+    // ✅ 페이지 열자마자 최근 ID가 있으면 자동 로드
     if(last){
-      // 아주 짧게 delay → 렌더 안정
       setTimeout(()=>loadFlow(true), 30);
     }
   </script>
