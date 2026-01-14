@@ -11,21 +11,48 @@
     <p id="status"></p>
   </div>
 
-  <script>
-    const input = document.getElementById("studentIdInput");
-    const button = document.getElementById("loadBtn");
-    const status = document.getElementById("status");
+<script>
+  const input = document.getElementById("studentIdInput");
+  const button = document.getElementById("loadBtn");
+  const status = document.getElementById("status");
 
-    button.addEventListener("click", () => {
-      const id = input.value.trim().toLowerCase();
+  async function loadStudentIndex(studentIdRaw) {
+    const id = studentIdRaw.trim().toLowerCase();
+    const prefix = id.slice(0, 2);
+    const indexPath = `data/students/${prefix}/${id}/index.json`;
 
-      if (!id) {
-        status.textContent = "ID를 입력하세요.";
-        return;
-      }
+    status.textContent = `불러오는 중... (${indexPath})`;
 
-      console.log("입력된 ID:", id);
-      status.textContent = `ID "${id}" 입력됨`;
-    });
-  </script>
+    const res = await fetch(indexPath, { cache: "no-store" });
+    if (!res.ok) throw new Error(`index.json 로드 실패: ${res.status}`);
+
+    const data = await res.json();
+
+    if (!data || !Array.isArray(data.sets)) {
+      throw new Error("index.json 형식 오류: sets 배열이 없습니다.");
+    }
+
+    return { id, indexPath, data };
+  }
+
+  button.addEventListener("click", async () => {
+    const raw = input.value;
+    if (!raw.trim()) {
+      status.textContent = "ID를 입력하세요.";
+      return;
+    }
+
+    try {
+      const { id, indexPath, data } = await loadStudentIndex(raw);
+
+      status.textContent = `✅ ${id} 세트 ${data.sets.length}개 로드됨`;
+      console.log("indexPath:", indexPath);
+      console.log("학생 index.json:", data);
+    } catch (err) {
+      console.error(err);
+      status.textContent = `❌ 불러오기 실패: ${err.message}`;
+    }
+  });
+</script>
+
 </body>
