@@ -1,134 +1,40 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vocab Check</title>
-  <style>
-    :root { --gap: 12px; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; line-height: 1.4; }
-    h1 { margin: 0 0 18px; font-size: 42px; }
-    #app { max-width: 980px; }
-    .row { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
-    label { display: inline-flex; align-items: center; gap: 8px; }
-    input, select, button { font-size: 16px; padding: 8px 10px; }
-    input { width: 220px; }
-    button { cursor: pointer; }
-    #status { margin: 14px 0 0; min-height: 1.4em; }
-    .muted { opacity: 0.75; }
-    #controls { display: none; margin-top: 18px; }
-    #wordList { margin-top: 18px; }
-    .word-row {
-      display: grid;
-      grid-template-columns: 200px 1fr auto;
-      gap: 16px;
-      padding: 10px 12px;
-      border-bottom: 1px solid #eee;
-      align-items: center;
-    }
-    .en { font-weight: 800; font-size: 28px; line-height: 1.1; }
-    .ko { font-size: 20px; user-select: none; }
-    .ko.mask { letter-spacing: 2px; }
-    .actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
-    .pill { border: 1px solid #ddd; background: #fafafa; border-radius: 10px; }
-    .pill:hover { background: #f3f3f3; }
-    .danger { color: #b00020; }
-    .ok { color: #0a7a20; }
-    .btn-know, .btn-dk {
-      border: 1px solid #ddd;
-      background: #fff;
-      border-radius: 10px;
-      padding: 8px 10px;
-      min-width: 72px;
-    }
-    .btn-know.active { border-color: #0a7a20; background: rgba(10,122,32,0.08); }
-    .btn-dk.active { border-color: #b00020; background: rgba(176,0,32,0.08); }
-    .summary { margin-top: 12px; }
-    .summary b { font-weight: 800; }
-    @media (max-width: 720px) {
-      h1 { font-size: 34px; }
-      .word-row { grid-template-columns: 1fr; align-items: start; }
-      .actions { justify-content: flex-start; }
-      .en { font-size: 26px; }
-      input { width: 100%; }
-    }
-  </style>
-</head>
-
 <body>
   <h1>Vocab Check</h1>
 
   <div id="app">
-    <div class="row">
+    <label>
+      학생 ID
+      <input id="studentIdInput" placeholder="예: khh0728" />
+    </label>
+    <button id="loadBtn">불러오기</button>
+
+    <p id="status"></p>
+
+    <!-- ✅ 오늘의 단어 섹션 -->
+    <section id="dueSection" style="display:none; margin-top:24px;">
+      <h2 style="margin:0 0 10px;">오늘의 단어</h2>
+      <p style="margin:0 0 12px; opacity:.7; font-size:14px;">
+        (이전에 ‘몰라요’를 눌러 3일 뒤 복습 대상으로 올라온 단어)
+      </p>
+      <div id="dueList"></div>
+      <hr style="margin:18px 0; opacity:.3;" />
+    </section>
+
+    <!-- 기존 컨트롤 -->
+    <div id="controls" style="display:none; margin-top:20px;">
       <label>
-        학생 ID
-        <input id="studentIdInput" placeholder="예: khh0728" autocomplete="off" />
+        세트 선택
+        <select id="setSelect"></select>
       </label>
-      <button id="loadBtn" class="pill">불러오기</button>
-      <span class="muted">Enter로도 불러올 수 있어요</span>
     </div>
 
-    <p id="status" class="muted"></p>
-
-    <div id="controls">
-      <div class="row">
-        <label>
-          세트 선택
-          <select id="setSelect"></select>
-        </label>
-      </div>
-
-      <div class="toolbar">
-        <button id="showAllBtn" class="pill">전체 보기</button>
-        <button id="hideAllBtn" class="pill">전체 가리기</button>
-        <button id="shuffleBtn" class="pill">섞기</button>
-
-        <span class="muted">|</span>
-
-        <button id="sendBtn" class="pill">결과 보내기</button>
-        <span id="sendHint" class="muted"></span>
-      </div>
-
-      <div class="summary muted" id="summary"></div>
-    </div>
-
-    <div id="wordList"></div>
+    <div id="wordList" style="margin-top:20px;"></div>
   </div>
 
-  <!-- Tally embed script (popup/openPopup 필요) -->
-  <script src="https://tally.so/widgets/embed.js"></script>
-
   <script>
-    // =========================
-    // Config
-    // =========================
-    const MASK = "•••••";
-    const STORAGE_KEY_LAST_ID = "vocabCheck:lastStudentId";
+    // ✅ Cloudflare Worker API
+    const API_BASE = "https://vocab-check-api.amatda-team.workers.dev";
 
-    // ✅ 너의 Tally 폼 ID
-    const TALLY_FORM_ID = "GxpL72";
-
-    // ✅ Tally hidden field key (너가 만들어둔 이름과 정확히 같아야 함)
-    const TALLY_FIELDS = {
-      studentId: "studentId",
-      setId: "setId",
-      setLabel: "setLabel",
-      knownCount: "knownCount",
-      unknownCount: "unknownCount",
-      totalCount: "totalCount",
-      unknownWords: "unknownWords",
-      pageUrl: "pageUrl",
-      submittedAt: "submittedAt"
-    };
-
-    // GitHub Pages(서브디렉토리 배포)에서도 경로 안정적으로 만들기 위한 base 처리
-    const BASE_URL = (location.pathname.endsWith("/") ? location.pathname : location.pathname + "/")
-      .replace(/\/index\.html?$/i, "/");
-
-    // =========================
-    // DOM
-    // =========================
     const input = document.getElementById("studentIdInput");
     const button = document.getElementById("loadBtn");
     const status = document.getElementById("status");
@@ -137,359 +43,337 @@
     const setSelect = document.getElementById("setSelect");
     const wordList = document.getElementById("wordList");
 
-    const showAllBtn = document.getElementById("showAllBtn");
-    const hideAllBtn = document.getElementById("hideAllBtn");
-    const shuffleBtn = document.getElementById("shuffleBtn");
+    const dueSection = document.getElementById("dueSection");
+    const dueList = document.getElementById("dueList");
 
-    const sendBtn = document.getElementById("sendBtn");
-    const sendHint = document.getElementById("sendHint");
-    const summaryEl = document.getElementById("summary");
-
-    // =========================
-    // State
-    // =========================
     let currentIndex = null;
-    let currentWords = [];
-    let revealedState = []; // 뜻 마스킹 상태
-    // knowState: null | "known" | "unknown"
-    let knowState = [];
-
-    // 현재 세트 메타
     let currentStudentId = "";
     let currentSetId = "";
-    let currentSetLabel = "";
 
-    // =========================
-    // Helpers
-    // =========================
-    function setStatus(text, type = "muted") {
-      status.className = type;
-      status.textContent = text;
-    }
-
-    function normalizeId(raw) {
+    // ---------- helpers ----------
+    function normalizeStudentId(raw) {
       return raw.trim().toLowerCase();
     }
 
-    function buildIndexPath(id) {
+    function maskText() {
+      return "•••••";
+    }
+
+    function el(tag, props = {}, children = []) {
+      const node = document.createElement(tag);
+      Object.entries(props).forEach(([k, v]) => {
+        if (k === "style") Object.assign(node.style, v);
+        else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2).toLowerCase(), v);
+        else if (k === "className") node.className = v;
+        else node.setAttribute(k, v);
+      });
+      children.forEach((c) => node.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+      return node;
+    }
+
+    async function apiPostEvent({ studentId, setId, word, meaning, result }) {
+      const res = await fetch(`${API_BASE}/event`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId, setId, word, meaning, result }),
+      });
+      if (!res.ok) throw new Error(`event 저장 실패: ${res.status}`);
+      return res.json();
+    }
+
+    async function apiGetDue(studentId) {
+      const res = await fetch(`${API_BASE}/due?studentId=${encodeURIComponent(studentId)}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`due 로드 실패: ${res.status}`);
+      return res.json();
+    }
+
+    // ---------- github pages data ----------
+    async function loadStudentIndex(studentIdRaw) {
+      const id = normalizeStudentId(studentIdRaw);
       const prefix = id.slice(0, 2);
-      return `${BASE_URL}data/students/${prefix}/${id}/index.json`;
+      const indexPath = `data/students/${prefix}/${id}/index.json`;
+
+      status.textContent = `불러오는 중... (${indexPath})`;
+
+      const res = await fetch(indexPath, { cache: "no-store" });
+      if (!res.ok) throw new Error(`index.json 로드 실패: ${res.status}`);
+
+      const data = await res.json();
+      if (!Array.isArray(data.sets)) throw new Error("index.json 형식 오류");
+
+      return data;
     }
 
-    function toAbsolutePath(pathFromIndex) {
-      if (/^https?:\/\//i.test(pathFromIndex)) return pathFromIndex;
-      return `${BASE_URL}${pathFromIndex}`.replace(/\/{2,}/g, "/").replace(":/", "://");
-    }
-
-    async function fetchJson(url) {
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`로드 실패 (${res.status})`);
+    async function loadSet(path) {
+      const res = await fetch(path, { cache: "no-store" });
+      if (!res.ok) throw new Error(`세트 로드 실패: ${res.status}`);
       return res.json();
     }
 
     function renderSetOptions(sets) {
       setSelect.innerHTML = "";
-      sets.forEach((set, i) => {
+      sets.forEach((set) => {
         const opt = document.createElement("option");
         opt.value = set.path;
-        opt.textContent = set.label || set.yyMMdd || `set ${i + 1}`;
-        // label/setId 정보도 담아두기
-        opt.dataset.setId = set.yyMMdd || "";
-        opt.dataset.setLabel = set.label || set.yyMMdd || "";
+        opt.textContent = set.label || set.yyMMdd || set.date || set.path;
         setSelect.appendChild(opt);
       });
     }
 
-    function updateSummary() {
-      const total = currentWords.length;
-      const known = knowState.filter(v => v === "known").length;
-      const unknown = knowState.filter(v => v === "unknown").length;
-      const undecided = total - known - unknown;
+    // ---------- UI render: Due ----------
+    function renderDueWords(words) {
+      dueList.innerHTML = "";
 
-      summaryEl.innerHTML =
-        `총 <b>${total}</b>개 · 알아요 <b>${known}</b> · 몰라요 <b>${unknown}</b> · 미선택 <b>${undecided}</b>`;
-      sendHint.textContent = undecided > 0 ? "(아직 미선택 단어가 있어요)" : "(전부 선택됨)";
-    }
-
-    function renderWords(words) {
-      currentWords = Array.isArray(words) ? words : [];
-      revealedState = currentWords.map(() => false);
-      knowState = currentWords.map(() => null);
-
-      wordList.innerHTML = "";
-
-      if (!currentWords.length) {
-        wordList.innerHTML = `<p class="danger">단어가 없습니다. (세트 JSON을 확인해 주세요)</p>`;
-        updateSummary();
+      if (!words || words.length === 0) {
+        dueList.appendChild(
+          el("div", { style: { opacity: ".7", fontSize: "14px" } }, ["오늘 복습할 단어가 없어요 ✅"])
+        );
         return;
       }
 
-      currentWords.forEach(({ en, ko }, idx) => {
-        const row = document.createElement("div");
-        row.className = "word-row";
+      words.forEach((row) => {
+        const { word, meaning, set_id } = row;
 
-        const enEl = document.createElement("div");
-        enEl.className = "en";
-        enEl.textContent = en ?? "";
+        const enEl = el("div", { style: { width: "160px", fontWeight: "700" } }, [word]);
+        const koEl = el("div", { style: { flex: "1", cursor: "default" } }, [maskText()]);
+        const metaEl = el("div", { style: { opacity: ".55", fontSize: "12px", width: "90px", textAlign: "right" } }, [
+          set_id ? `#${set_id}` : "",
+        ]);
 
-        const koEl = document.createElement("div");
-        koEl.className = "ko mask";
-        koEl.textContent = MASK;
+        let revealed = false;
+        const revealMeaning = () => {
+          revealed = true;
+          koEl.textContent = meaning || "";
+        };
 
-        const actions = document.createElement("div");
-        actions.className = "actions";
+        const knowBtn = el(
+          "button",
+          {
+            style: { padding: "6px 10px", cursor: "pointer" },
+            onclick: async () => {
+              try {
+                revealMeaning();
+                await apiPostEvent({
+                  studentId: currentStudentId,
+                  setId: set_id || null,
+                  word,
+                  meaning: meaning || "",
+                  result: "know",
+                });
+                // know는 due에서 빠지게 하는 게 맞으니 즉시 재조회
+                await refreshDue();
+              } catch (e) {
+                console.error(e);
+                status.textContent = `❌ 저장 실패(알아요): ${e.message}`;
+              }
+            },
+          },
+          ["알아요"]
+        );
 
-        const knowBtn = document.createElement("button");
-        knowBtn.className = "btn-know";
-        knowBtn.textContent = "알아요";
+        const dontBtn = el(
+          "button",
+          {
+            style: { padding: "6px 10px", cursor: "pointer" },
+            onclick: async () => {
+              try {
+                revealMeaning();
+                await apiPostEvent({
+                  studentId: currentStudentId,
+                  setId: set_id || null,
+                  word,
+                  meaning: meaning || "",
+                  result: "dontknow",
+                });
+                // dontknow는 3일 뒤 다시 나오게 설정되지만,
+                // 지금 당장은 "다음 대상"만 반영되도록 due 재조회
+                await refreshDue();
+              } catch (e) {
+                console.error(e);
+                status.textContent = `❌ 저장 실패(몰라요): ${e.message}`;
+              }
+            },
+          },
+          ["몰라요"]
+        );
 
-        const dkBtn = document.createElement("button");
-        dkBtn.className = "btn-dk";
-        dkBtn.textContent = "몰라요";
+        const btnWrap = el("div", { style: { display: "flex", gap: "8px" } }, [knowBtn, dontBtn]);
 
-        function revealMeaning() {
-          revealedState[idx] = true;
-          koEl.classList.remove("mask");
-          koEl.textContent = ko ?? "";
-        }
+        const rowEl = el(
+          "div",
+          {
+            style: {
+              display: "flex",
+              gap: "14px",
+              alignItems: "center",
+              marginBottom: "10px",
+              padding: "10px 12px",
+              border: "1px solid rgba(0,0,0,.12)",
+              borderRadius: "10px",
+            },
+          },
+          [enEl, koEl, metaEl, btnWrap]
+        );
 
-        function setKnown(value) {
-          knowState[idx] = value;
+        dueList.appendChild(rowEl);
+      });
+    }
 
-          // 버튼 UI
-          knowBtn.classList.toggle("active", value === "known");
-          dkBtn.classList.toggle("active", value === "unknown");
+    async function refreshDue() {
+      if (!currentStudentId) return;
+      const data = await apiGetDue(currentStudentId);
+      dueSection.style.display = "block";
+      renderDueWords(data.words || []);
+    }
 
-          // 규칙: 버튼(둘 중 아무거나) 누르면 뜻 오픈
-          revealMeaning();
-          updateSummary();
-        }
+    // ---------- UI render: Set words ----------
+    function renderWords(words, setIdForEvent) {
+      wordList.innerHTML = "";
 
-        knowBtn.addEventListener("click", () => setKnown("known"));
-        dkBtn.addEventListener("click", () => setKnown("unknown"));
+      if (!words || words.length === 0) {
+        wordList.appendChild(el("div", { style: { opacity: ".7" } }, ["단어가 없어요."]));
+        return;
+      }
 
-        actions.appendChild(knowBtn);
-        actions.appendChild(dkBtn);
+      words.forEach(({ en, ko }) => {
+        const enEl = el("div", { style: { width: "160px", fontWeight: "700" } }, [en]);
+        const koEl = el("div", { style: { flex: "1" } }, [maskText()]);
 
-        row.appendChild(enEl);
-        row.appendChild(koEl);
-        row.appendChild(actions);
+        let revealed = false;
+        const revealMeaning = () => {
+          revealed = true;
+          koEl.textContent = ko || "";
+        };
+
+        const knowBtn = el(
+          "button",
+          {
+            style: { padding: "6px 10px", cursor: "pointer" },
+            onclick: async () => {
+              try {
+                revealMeaning(); // ✅ 버튼 클릭하면 마스킹 해제
+                await apiPostEvent({
+                  studentId: currentStudentId,
+                  setId: setIdForEvent,
+                  word: en,
+                  meaning: ko || "",
+                  result: "know",
+                });
+                // 세트 학습 중에도 due는 갱신해주면 “오늘의 단어”가 바로 정리됨
+                await refreshDue();
+              } catch (e) {
+                console.error(e);
+                status.textContent = `❌ 저장 실패(알아요): ${e.message}`;
+              }
+            },
+          },
+          ["알아요"]
+        );
+
+        const dontBtn = el(
+          "button",
+          {
+            style: { padding: "6px 10px", cursor: "pointer" },
+            onclick: async () => {
+              try {
+                revealMeaning(); // ✅ 버튼 클릭하면 마스킹 해제
+                await apiPostEvent({
+                  studentId: currentStudentId,
+                  setId: setIdForEvent,
+                  word: en,
+                  meaning: ko || "",
+                  result: "dontknow",
+                });
+                await refreshDue();
+              } catch (e) {
+                console.error(e);
+                status.textContent = `❌ 저장 실패(몰라요): ${e.message}`;
+              }
+            },
+          },
+          ["몰라요"]
+        );
+
+        const btnWrap = el("div", { style: { display: "flex", gap: "8px" } }, [knowBtn, dontBtn]);
+
+        const row = el(
+          "div",
+          {
+            style: {
+              display: "flex",
+              gap: "14px",
+              alignItems: "center",
+              marginBottom: "10px",
+              padding: "10px 12px",
+              border: "1px solid rgba(0,0,0,.12)",
+              borderRadius: "10px",
+            },
+          },
+          [enEl, koEl, btnWrap]
+        );
 
         wordList.appendChild(row);
       });
-
-      updateSummary();
     }
 
-    function applyShowAll(show) {
-      const rows = wordList.children;
-      for (let i = 0; i < currentWords.length; i++) {
-        const koEl = rows[i]?.children?.[1];
-        if (!koEl) continue;
-
-        revealedState[i] = show;
-
-        if (show) {
-          koEl.classList.remove("mask");
-          koEl.textContent = currentWords[i].ko ?? "";
-        } else {
-          koEl.classList.add("mask");
-          koEl.textContent = MASK;
-        }
-      }
-    }
-
-    function shuffleWords() {
-      const shuffled = [...currentWords]
-        .map(v => ({ v, r: Math.random() }))
-        .sort((a, b) => a.r - b.r)
-        .map(o => o.v);
-
-      renderWords(shuffled);
-      setStatus("🔀 단어 순서를 섞었어요. (선택 상태는 초기화돼요)", "muted");
-    }
-
-    function getSelectedSetMeta() {
-      const opt = setSelect.selectedOptions?.[0];
-      const setId = opt?.dataset?.setId || "";
-      const setLabel = opt?.dataset?.setLabel || opt?.textContent || "";
-      return { setId, setLabel };
-    }
-
-    function buildUnknownWordsText() {
-      const unknown = [];
-      for (let i = 0; i < currentWords.length; i++) {
-        if (knowState[i] === "unknown") unknown.push(currentWords[i].en);
-      }
-      // 한 줄에 하나씩
-      return unknown.join("\n");
-    }
-
-    function buildCounts() {
-      const total = currentWords.length;
-      const knownCount = knowState.filter(v => v === "known").length;
-      const unknownCount = knowState.filter(v => v === "unknown").length;
-      return { total, knownCount, unknownCount };
-    }
-
-    function openTallySubmitPopup() {
-      if (!window.Tally || typeof window.Tally.openPopup !== "function") {
-        alert("Tally 로딩이 아직 안 됐어요. 잠시 후 다시 시도해 주세요.");
+    // ---------- load flow ----------
+    async function loadAll(studentIdRaw) {
+      const raw = studentIdRaw;
+      if (!raw.trim()) {
+        status.textContent = "ID를 입력하세요.";
         return;
       }
-
-      const { total, knownCount, unknownCount } = buildCounts();
-      const unknownWords = buildUnknownWordsText();
-      const nowIso = new Date().toISOString();
-
-      // ✅ hidden fields payload
-      const hiddenFields = {};
-      hiddenFields[TALLY_FIELDS.studentId] = currentStudentId;
-      hiddenFields[TALLY_FIELDS.setId] = currentSetId;
-      hiddenFields[TALLY_FIELDS.setLabel] = currentSetLabel;
-
-      hiddenFields[TALLY_FIELDS.knownCount] = String(knownCount);
-      hiddenFields[TALLY_FIELDS.unknownCount] = String(unknownCount);
-      hiddenFields[TALLY_FIELDS.totalCount] = String(total);
-
-      hiddenFields[TALLY_FIELDS.unknownWords] = unknownWords;
-
-      hiddenFields[TALLY_FIELDS.pageUrl] = location.href;
-      hiddenFields[TALLY_FIELDS.submittedAt] = nowIso;
-
-      // ✅ 팝업 열기
-      window.Tally.openPopup(TALLY_FORM_ID, {
-        // Tally hidden fields는 querystring 방식으로도 가능하지만,
-        // openPopup options의 hiddenFields로 넣는 게 가장 깔끔함.
-        hiddenFields,
-        onSubmit: () => {
-          setStatus("✅ 전송 완료! (Tally 제출됨)", "ok");
-        }
-      });
-    }
-
-    // =========================
-    // Main flows
-    // =========================
-    async function loadStudent(studentIdRaw) {
-      const id = normalizeId(studentIdRaw);
-      if (!id) {
-        setStatus("ID를 입력하세요.", "danger");
-        return;
-      }
-
-      currentStudentId = id;
-      localStorage.setItem(STORAGE_KEY_LAST_ID, id);
-
-      const indexUrl = buildIndexPath(id);
 
       try {
-        setStatus(`불러오는 중... (${indexUrl.replace(location.origin, "")})`, "muted");
+        currentStudentId = normalizeStudentId(raw);
+        currentIndex = await loadStudentIndex(currentStudentId);
 
-        const idx = await fetchJson(indexUrl);
-
-        if (!idx || !Array.isArray(idx.sets)) {
-          throw new Error("index.json 형식 오류 (sets 배열 없음)");
-        }
-        if (idx.sets.length === 0) {
-          throw new Error("세트가 0개입니다. index.json을 확인해 주세요.");
-        }
-
-        currentIndex = idx;
-
+        status.textContent = `✅ 세트 ${currentIndex.sets.length}개 로드됨`;
         controls.style.display = "block";
+
         renderSetOptions(currentIndex.sets);
 
         // 첫 세트 자동 로드
-        const firstPath = currentIndex.sets[0].path;
-        await loadSetByPath(firstPath);
+        const first = currentIndex.sets[0];
+        const firstPath = first.path;
+        currentSetId = first.yyMMdd || first.label || "";
+        const words = await loadSet(firstPath);
+        renderWords(words, first.yyMMdd || null);
 
-        setStatus(`✅ ${id} 세트 ${currentIndex.sets.length}개 로드됨`, "ok");
+        // ✅ due도 같이 로드
+        await refreshDue();
       } catch (err) {
         console.error(err);
-        controls.style.display = "none";
-        wordList.innerHTML = "";
-        setStatus(`❌ 불러오기 실패: ${err.message}`, "danger");
+        status.textContent = `❌ 실패: ${err.message}`;
       }
     }
 
-    async function loadSetByPath(pathFromIndex) {
-      try {
-        const setUrl = toAbsolutePath(pathFromIndex);
-        const words = await fetchJson(setUrl);
-
-        if (!Array.isArray(words)) {
-          throw new Error("세트 JSON 형식 오류 (배열이 아님)");
-        }
-
-        // 세트 메타 갱신
-        const meta = getSelectedSetMeta();
-        currentSetId = meta.setId || (pathFromIndex.match(/(\d{6})\.json$/)?.[1] ?? "");
-        currentSetLabel = meta.setLabel || currentSetId || "set";
-
-        renderWords(words);
-        setStatus(`✅ 세트 로드됨: ${currentSetLabel}`, "ok");
-
-      } catch (err) {
-        console.error(err);
-        wordList.innerHTML = "";
-        setStatus(`❌ 세트 로드 실패: ${err.message}`, "danger");
-      }
-    }
-
-    // =========================
-    // Events
-    // =========================
-    button.addEventListener("click", () => loadStudent(input.value));
-
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") loadStudent(input.value);
+    // 버튼 클릭 로드
+    button.addEventListener("click", async () => {
+      await loadAll(input.value);
     });
 
+    // ✅ 엔터로 로드
+    input.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        await loadAll(input.value);
+      }
+    });
+
+    // 세트 변경
     setSelect.addEventListener("change", async () => {
-      const path = setSelect.value;
-      await loadSetByPath(path);
-    });
+      try {
+        const path = setSelect.value;
+        const selected = (currentIndex?.sets || []).find((s) => s.path === path);
+        const words = await loadSet(path);
 
-    showAllBtn.addEventListener("click", () => {
-      applyShowAll(true);
-      setStatus("👀 전체 뜻을 표시했어요.", "muted");
-    });
-
-    hideAllBtn.addEventListener("click", () => {
-      applyShowAll(false);
-      setStatus("🙈 전체 뜻을 다시 가렸어요.", "muted");
-    });
-
-    shuffleBtn.addEventListener("click", () => {
-      shuffleWords();
-    });
-
-    sendBtn.addEventListener("click", () => {
-      if (!currentStudentId) {
-        setStatus("먼저 학생 ID를 불러오세요.", "danger");
-        return;
+        // selected.yyMMdd가 우리가 set_id로 쓰는 값(예: 260104)
+        renderWords(words, selected?.yyMMdd || null);
+      } catch (err) {
+        console.error(err);
+        status.textContent = `❌ 세트 변경 실패`;
       }
-      if (!currentWords.length) {
-        setStatus("보낼 단어가 없어요.", "danger");
-        return;
-      }
-      // 미선택이 있어도 보내게 할지? (현재는 허용)
-      openTallySubmitPopup();
     });
-
-    // =========================
-    // Init: last ID autofill
-    // =========================
-    (function init() {
-      const last = localStorage.getItem(STORAGE_KEY_LAST_ID);
-      if (last) {
-        input.value = last;
-        setStatus(`이전 ID "${last}"가 자동 입력됐어요. (불러오기를 누르세요)`, "muted");
-      } else {
-        setStatus("학생 ID를 입력하고 불러오기를 누르세요.", "muted");
-      }
-    })();
   </script>
 </body>
-</html>
