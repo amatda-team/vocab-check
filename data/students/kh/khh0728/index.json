@@ -1,13 +1,19 @@
 {
   "schemaVersion": 1,
   "studentId": "khh0728",
-  "generatedAt": "2026-01-14T13:08:54.281Z",
+  "generatedAt": "2026-01-14T13:10:26.031Z",
   "sets": [
     {
       "yyMMdd": "260114",
       "date": "2026-01-14",
       "label": "2026-01-14",
       "path": "data/students/kh/khh0728/sets/260114.json"
+    },
+    {
+      "yyMMdd": "260104",
+      "date": "2026-01-04",
+      "label": "2026-01-04",
+      "path": "data/students/kh/khh0728/sets/260104.json"
     }
   ]
 }
